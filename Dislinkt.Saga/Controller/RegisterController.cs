@@ -28,6 +28,15 @@ namespace Dislinkt.Saga.Controller
             var profileResponse =await  profileClient.PostAsync("Profile/register-user",
                 new StringContent(request,Encoding.UTF8,"application/JSON")
                 );
+            var createdUser=await profileResponse.Content.ReadAsStringAsync();
+
+           // var c = JsonConvert.SerializeObject(createdUser);
+            var c1 = JsonConvert.DeserializeObject<User>(createdUser);
+
+            var nodeRequest= JsonConvert.SerializeObject(new ConnectionData{Id=c1.Id, UserName = c1.Username, Status = 1 });
+            var ConnectionResponse=await profileClient.PostAsync("Connections/registerUser", 
+                new StringContent(nodeRequest, Encoding.UTF8, "application/JSON")
+                );
             return true;
         }
     }
