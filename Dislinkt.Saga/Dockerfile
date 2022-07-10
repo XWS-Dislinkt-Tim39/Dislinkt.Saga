@@ -10,10 +10,10 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
 WORKDIR /src
-COPY ["Dislinkt.Saga/Dislinkt.Saga.csproj", "Dislinkt.Saga/"]
-RUN dotnet restore "Dislinkt.Saga/Dislinkt.Saga.csproj"
+COPY ["./Dislinkt.Saga/Dislinkt.Saga/Dislinkt.Saga.csproj", "Dislinkt.Saga/"]
+
 COPY . .
-WORKDIR "/src/Dislinkt.Saga"
+WORKDIR "./Dislinkt.Saga/Dislinkt.Saga"
 RUN dotnet build "Dislinkt.Saga.csproj" -c Release -o /app/build
 
 FROM build AS publish
