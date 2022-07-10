@@ -28,20 +28,20 @@ namespace Dislinkt.Saga.Controller
             var request = JsonConvert.SerializeObject(user);
             var createdUserJson = new User();
           
-                var profileClient = httpClientFactory.CreateClient("Profile");
-                var profileResponse = await profileClient.PostAsync("Profile/register-user",
+            var profileClient = httpClientFactory.CreateClient("Profile");
+            var profileResponse = await profileClient.PostAsync("Profile/register-user",
                     new StringContent(request, Encoding.UTF8, "application/JSON")
                     );
-                var createdUser = await profileResponse.Content.ReadAsStringAsync();
-                createdUserJson = JsonConvert.DeserializeObject<User>(createdUser);
+            var createdUser = await profileResponse.Content.ReadAsStringAsync();
+            createdUserJson = JsonConvert.DeserializeObject<User>(createdUser);
            
 
-            //connectionstry
-              var nodeRequest = JsonConvert.SerializeObject(new ConnectionData { Id = createdUserJson.Id, UserName = createdUserJson.Username, Status = 1 });
-                var connectionResponse = await profileClient.PostAsync("Connections/registerUser",
+            //connection
+            var nodeRequest = JsonConvert.SerializeObject(new ConnectionData { Id = createdUserJson.Id, UserName = createdUserJson.Username, Status = 1 });
+            var connectionResponse = await profileClient.PostAsync("Connections/registerUser",
                     new StringContent(nodeRequest, Encoding.UTF8, "application/JSON")
                     );
-               var isCreatedNode = await connectionResponse.Content.ReadAsStringAsync();
+            var isCreatedNode = await connectionResponse.Content.ReadAsStringAsync();
 
             if (isCreatedNode=="false")
             {
@@ -60,6 +60,14 @@ namespace Dislinkt.Saga.Controller
                 FriendRequestOn=true
             });
             var notificationResponse = await profileClient.PostAsync("Notifications/create-notification-settings", new StringContent(notificationRequest, Encoding.UTF8, "application/JSON"));
+            var isCreatedNotification = await notificationResponse.Content.ReadAsStringAsync();
+
+            if (isCreatedNotification == "false")
+            {
+                await profileClient.DeleteAsync($"Profile/delete-user/{createdUserJson.Id}");
+                await profileClient.DeleteAsync($"Connections/deleteUser/{createdUserJson.Id}");
+                return false;
+            }
 
             //admin dashboard activity
             var activityRequest = JsonConvert.SerializeObject(new ActivityData
@@ -70,7 +78,15 @@ namespace Dislinkt.Saga.Controller
                 Date = DateTime.Now
             });
             var activityResponse = await profileClient.PostAsync("AdminDashboard/create-activity", new StringContent(activityRequest, Encoding.UTF8, "application/JSON"));
+            var isCreatedActivity = await activityResponse.Content.ReadAsStringAsync();
 
+            if (isCreatedActivity == "false")
+            {
+                await profileClient.DeleteAsync($"Profile/delete-user/{createdUserJson.Id}");
+                await profileClient.DeleteAsync($"Connections/deleteUser/{createdUserJson.Id}");
+                await profileClient.DeleteAsync($"Notifications/delete-by-userId/{createdUserJson.Id}");
+                return false;
+            }
 
             return true;
         }
