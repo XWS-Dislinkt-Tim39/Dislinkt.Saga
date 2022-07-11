@@ -6,5 +6,7 @@ namespace Dislinkt.Saga.Proxy
     public interface INotificationProxy
     {
         Task<(User, bool)> CreateNotificationSetting(User createduser);
+
+        Task DeleteNotificationAsync(User user);
     }
 }

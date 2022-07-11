@@ -1,3 +1,4 @@
+using Dislinkt.Saga.Menager;
 using Dislinkt.Saga.Proxy;
 using Dislinkt.Saga.Proxy.Implementation;
 using Microsoft.AspNetCore.Builder;
@@ -50,6 +51,8 @@ namespace Dislinkt.Saga
             services.AddSingleton<IProfileProxy, ProfileProxy>();
             services.AddSingleton<IConnectionProxy, ConnectionProxy>();
             services.AddSingleton<INotificationProxy, NotificationProxy>();
+            services.AddSingleton<IActivityProxy, ActivityProxy>();
+            services.AddSingleton<IRegistrationMenager, RegistrationMenager>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

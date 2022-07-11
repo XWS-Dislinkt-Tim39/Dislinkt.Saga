@@ -44,5 +44,13 @@ namespace Dislinkt.Saga.Proxy.Implementation
 
 
         }
+
+        public async Task DeleteNotificationAsync(User user)
+        {
+            var profileClient = httpClientFactory.CreateClient("Profile");
+
+            await profileClient.DeleteAsync($"Notifications/delete-by-userId/{user.Id}");
+
+        }
     }
 }
