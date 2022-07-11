@@ -1,4 +1,5 @@
 ﻿using Dislinkt.Saga.Data;
+using Dislinkt.Saga.Menager;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
@@ -14,18 +15,20 @@ namespace Dislinkt.Saga.Controller
     public class RegisterController:ControllerBase
     {
 
-        private readonly IHttpClientFactory httpClientFactory;
+        private readonly IRegistrationMenager _registrationMenager;
 
-        public RegisterController(IHttpClientFactory httpClientFactory)
+        public RegisterController(IRegistrationMenager registrationMenager)
         {
-            this.httpClientFactory = httpClientFactory;
+           this._registrationMenager= registrationMenager;
         }
         [HttpPost]
         [Route("/register")]
-        public async Task<bool> Register([FromBody] UserData user)
+        public bool Register([FromBody] UserData user)
         {
+            return _registrationMenager.Register(user);
+
             //profile 
-            var request = JsonConvert.SerializeObject(user);
+          /*  var request = JsonConvert.SerializeObject(user);
             var createdUserJson = new User();
           
             var profileClient = httpClientFactory.CreateClient("Profile");
@@ -88,7 +91,7 @@ namespace Dislinkt.Saga.Controller
                 return false;
             }
 
-            return true;
+            return true;*/
         }
     }
 
