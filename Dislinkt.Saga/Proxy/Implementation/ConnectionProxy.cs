@@ -21,20 +21,16 @@ namespace Dislinkt.Saga.Proxy.Implementation
             {
                 var profileClient = httpClientFactory.CreateClient("Profile");
                 var nodeRequest = JsonConvert.SerializeObject(new ConnectionData { Id = createduser.Id, UserName = createduser.Username, Status = 1 });
-                var nodeRequestJob = JsonConvert.SerializeObject(new ConnectionJobData { Id = createduser.Id, Username = createduser.Username, Seniority = createduser.Seniority});
-
+               
                 var connectionResponse = await profileClient.PostAsync("Connections/registerUser",
                         new StringContent(nodeRequest, Encoding.UTF8, "application/JSON")
                         );
-                var connectionResponseJob = await profileClient.PostAsync("Jobs/addUser",
-                       new StringContent(nodeRequestJob, Encoding.UTF8, "application/JSON")
-                       );
+                
                 var isCreatedNode = await connectionResponse.Content.ReadAsStringAsync();
-                var isCreatedNodeJob = await connectionResponseJob.Content.ReadAsStringAsync();
 
                 if (isCreatedNode == "false")
                 {
-                    await profileClient.DeleteAsync($"Profile/delete-user/{createduser.Id}");
+                    //await profileClient.DeleteAsync($"Profile/delete-user/{createduser.Id}");
                     return (null, false);
                 }
                 return (createduser, true);
