@@ -53,6 +53,7 @@ namespace Dislinkt.Saga
             services.AddSingleton<INotificationProxy, NotificationProxy>();
             services.AddSingleton<IActivityProxy, ActivityProxy>();
             services.AddSingleton<IRegistrationMenager, RegistrationMenager>();
+            services.AddSingleton<IJobsProxy, JobsProxy>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

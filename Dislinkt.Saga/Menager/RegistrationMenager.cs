@@ -7,6 +7,7 @@ namespace Dislinkt.Saga.Menager
     {
         private readonly IProfileProxy profileProxy;
         private readonly IConnectionProxy connectionProxy;
+        private readonly IJobsProxy jobsProxy;
         private readonly INotificationProxy notificationProxy;
         private readonly IActivityProxy activityProxy;
 
@@ -20,13 +21,16 @@ namespace Dislinkt.Saga.Menager
             ProfileCreateFailed,
             ConnectionCreated,
             ConnectionCreatedFailed,
-            ConnectionRolleback,
+            ConnectionRollback,
+            JobsUserCreated,
+            JobsUserRollback,
+            JobsUserFailed,
             NotificationCreated,
             NotificationCareateFailed,
             NotificationRollback,
             ActivityCreated,
             ActivityCreatedFailed,
-            ActivityRolleback
+            ActivityRollback
         }
 
         enum RegistrationAction
@@ -36,17 +40,20 @@ namespace Dislinkt.Saga.Menager
             CancelProfile,
             CreateConnection,
             RollbackConnection,
+            CreateJobsUser,
+            RollbackJobsUser,
             CreateNotification,
             RollbackNotification,
             CreateActivity,
             RollbackActivity
         }
 
-        public RegistrationMenager(IProfileProxy profileProxy,IConnectionProxy connectionProxy,INotificationProxy notificationProxy,IActivityProxy activityProxy)
+        public RegistrationMenager(IProfileProxy profileProxy,IConnectionProxy connectionProxy,IJobsProxy jobsProxy, INotificationProxy notificationProxy,IActivityProxy activityProxy)
         {
             this.profileProxy = profileProxy;
             this.notificationProxy= notificationProxy;
             this.connectionProxy= connectionProxy;
+            this.jobsProxy = jobsProxy;
             this.activityProxy = activityProxy;
         }
 
@@ -56,89 +63,114 @@ namespace Dislinkt.Saga.Menager
                 RegistrationTransactionState.NotStarted);
 
             var user = new User();
-            var user1 = new User();
+            var createdUser = new User();
             var isSuccess = false;
+
             registrationStateMachine.Configure(RegistrationTransactionState.NotStarted)
                 .PermitDynamic(RegistrationAction.CreateProfile, () => {
                     (user, isSuccess) = profileProxy.CreateUser(input).Result;
                     return isSuccess ? RegistrationTransactionState.ProfileCreated : RegistrationTransactionState.ProfileCreateFailed;
                 });
 
+
             registrationStateMachine.Configure(RegistrationTransactionState.ProfileCreated)
-                  .PermitDynamic(RegistrationAction.CreateConnection, () => {
-                       (user1, isSuccess) = connectionProxy.CreateNode(user).Result;
-                      return isSuccess ? RegistrationTransactionState.ConnectionCreated : RegistrationTransactionState.ConnectionCreatedFailed;
-                  })
-                  .OnEntry(()=>registrationStateMachine.Fire(RegistrationAction.CreateConnection));
+                .PermitDynamic(RegistrationAction.CreateConnection, () => {
+                    (createdUser, isSuccess) = connectionProxy.CreateNode(user).Result;
+                    return isSuccess ? RegistrationTransactionState.ConnectionCreated : RegistrationTransactionState.ConnectionCreatedFailed;
+                })
+                .OnEntry(()=>registrationStateMachine.Fire(RegistrationAction.CreateConnection));
+
 
             registrationStateMachine.Configure(RegistrationTransactionState.ConnectionCreated)
-                 .PermitDynamic(RegistrationAction.CreateNotification, () => {
-                     (user1, isSuccess) = notificationProxy.CreateNotificationSetting(user).Result;
-                     return isSuccess ? RegistrationTransactionState.NotificationCreated : RegistrationTransactionState.NotificationCareateFailed;
-                 })
-                 .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CreateNotification));
+                .PermitDynamic(RegistrationAction.CreateJobsUser, () => {
+                    (createdUser, isSuccess) = jobsProxy.CreateNode(user).Result;
+                    return isSuccess ? RegistrationTransactionState.JobsUserCreated : RegistrationTransactionState.JobsUserFailed;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CreateJobsUser));
+
+
+            registrationStateMachine.Configure(RegistrationTransactionState.JobsUserCreated)
+                .PermitDynamic(RegistrationAction.CreateNotification, () => {
+                    (createdUser, isSuccess) = notificationProxy.CreateNotificationSetting(user).Result;
+                    return isSuccess ? RegistrationTransactionState.NotificationCreated : RegistrationTransactionState.NotificationCareateFailed;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CreateNotification));
+
 
             registrationStateMachine.Configure(RegistrationTransactionState.NotificationCreated)
-              .PermitDynamic(RegistrationAction.CreateActivity, () => {
-                  (user1, isSuccess) = activityProxy.CreateActivity(user).Result;
-                  return isSuccess ? RegistrationTransactionState.ActivityCreated : RegistrationTransactionState.ActivityCreatedFailed;
-              })
-              .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CreateActivity));
+                .PermitDynamic(RegistrationAction.CreateActivity, () => {
+                    (createdUser, isSuccess) = activityProxy.CreateActivity(user).Result;
+                    
+                    return isSuccess ? RegistrationTransactionState.ActivityCreated : RegistrationTransactionState.ActivityCreatedFailed;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CreateActivity));
+
 
             //rolback
+
             registrationStateMachine.Configure(RegistrationTransactionState.ActivityCreatedFailed)
-               .PermitDynamic(RegistrationAction.RollbackActivity, () =>
-               {
+                .PermitDynamic(RegistrationAction.RollbackActivity, () =>{
                   // notificationProxy.DeleteNotificationAsync(user);
-                   return RegistrationTransactionState.ActivityRolleback;
-               })
-               .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackActivity));
+                    return RegistrationTransactionState.ActivityRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackActivity));
+
 
             registrationStateMachine.Configure(RegistrationTransactionState.NotificationCareateFailed)
-            .PermitDynamic(RegistrationAction.RollbackNotification, () =>
-            {
+                .PermitDynamic(RegistrationAction.RollbackNotification, () =>{
                    // notificationProxy.DeleteNotificationAsync(user);
-                return RegistrationTransactionState.NotificationRollback;
-            })
-            .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackNotification));
+                    return RegistrationTransactionState.NotificationRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackNotification));
+
+
+            registrationStateMachine.Configure(RegistrationTransactionState.JobsUserFailed)
+                .PermitDynamic(RegistrationAction.RollbackJobsUser, () =>{
+              // notificationProxy.DeleteNotificationAsync(user);
+                    return RegistrationTransactionState.JobsUserRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackJobsUser));
 
             registrationStateMachine.Configure(RegistrationTransactionState.ConnectionCreatedFailed)
-          .PermitDynamic(RegistrationAction.RollbackConnection, () =>
-          {
+                .PermitDynamic(RegistrationAction.RollbackConnection, () => {
                 // notificationProxy.DeleteNotificationAsync(user);
-              return RegistrationTransactionState.ConnectionRolleback;
-          })
-          .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackConnection));
+                    return RegistrationTransactionState.ConnectionRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackConnection));
 
-            //nastavak 
 
-          registrationStateMachine.Configure(RegistrationTransactionState.ActivityRolleback)
-          .PermitDynamic(RegistrationAction.RollbackNotification, () =>
-          {
-               notificationProxy.DeleteNotificationAsync(user);
-              return RegistrationTransactionState.NotificationRollback;
-          })
-          .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackNotification));
+            //nastavak na rollback poruku
+
+            registrationStateMachine.Configure(RegistrationTransactionState.ActivityRollback)
+                .PermitDynamic(RegistrationAction.RollbackNotification, () =>{
+                    notificationProxy.DeleteNotificationAsync(user);
+                    return RegistrationTransactionState.NotificationRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackNotification));
+
 
             registrationStateMachine.Configure(RegistrationTransactionState.NotificationRollback)
-         .PermitDynamic(RegistrationAction.RollbackConnection, () =>
-         {
-             connectionProxy.DeleteNodeAsync(user);
-             return RegistrationTransactionState.ConnectionRolleback;
-         })
-         .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackConnection));
-
-            registrationStateMachine.Configure(RegistrationTransactionState.ConnectionRolleback)
-      .PermitDynamic(RegistrationAction.CancelProfile, () =>
-      {
-          profileProxy.DeleteProfileAsync(user);
-          return RegistrationTransactionState.ProfileCancelled;
-      })
-      .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CancelProfile));
+                .PermitDynamic(RegistrationAction.RollbackJobsUser, () =>{
+                    jobsProxy.DeleteNodeAsync(user);
+                    return RegistrationTransactionState.JobsUserRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackJobsUser));
 
 
+            registrationStateMachine.Configure(RegistrationTransactionState.JobsUserRollback)
+                .PermitDynamic(RegistrationAction.RollbackConnection, () => {
+                    connectionProxy.DeleteNodeAsync(user);
+                    return RegistrationTransactionState.ConnectionRollback;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.RollbackConnection));
 
 
+            registrationStateMachine.Configure(RegistrationTransactionState.ConnectionRollback)
+                .PermitDynamic(RegistrationAction.CancelProfile, () =>{
+                    profileProxy.DeleteProfileAsync(user);
+                    return RegistrationTransactionState.ProfileCancelled;
+                })
+                .OnEntry(() => registrationStateMachine.Fire(RegistrationAction.CancelProfile));
 
 
 
