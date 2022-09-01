@@ -37,8 +37,9 @@ namespace Dislinkt.Saga.Proxy.Implementation
                 }
                 return (createdUser, true);
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.ToString());
                 return (null, false);
             }
         }

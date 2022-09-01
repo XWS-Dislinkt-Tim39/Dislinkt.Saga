@@ -47,7 +47,7 @@ namespace Dislinkt.Saga
             }).AddJsonOptions(options =>
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())); ;
 
-            services.AddHttpClient("Profile", c => c.BaseAddress = new Uri("https://localhost:44343/api/"));
+            services.AddHttpClient("Profile", c => c.BaseAddress = new Uri("http://dislinkt.apigateway:80/api/"));
             services.AddSingleton<IProfileProxy, ProfileProxy>();
             services.AddSingleton<IConnectionProxy, ConnectionProxy>();
             services.AddSingleton<INotificationProxy, NotificationProxy>();

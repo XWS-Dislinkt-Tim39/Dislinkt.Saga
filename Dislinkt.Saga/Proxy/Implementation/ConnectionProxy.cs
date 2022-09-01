@@ -1,5 +1,6 @@
 ﻿using Dislinkt.Saga.Data;
 using Newtonsoft.Json;
+using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,12 +32,14 @@ namespace Dislinkt.Saga.Proxy.Implementation
                 if (isCreatedNode == "false")
                 {
                     //await profileClient.DeleteAsync($"Profile/delete-user/{createduser.Id}");
+                    Console.WriteLine("isCreatedNodeJob je false (ConnectionsProxy)");
                     return (null, false);
                 }
                 return (createduser, true);
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.ToString());
                 return (null, false);
             }
 

@@ -1,5 +1,6 @@
 ﻿using Dislinkt.Saga.Data;
 using Newtonsoft.Json;
+using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,12 +32,14 @@ namespace Dislinkt.Saga.Proxy.Implementation
 
                 if (isCreatedNodeJob == "false")
                 {
+                    Console.WriteLine("isCreatedNodeJob je false (JobsProxy)");
                     return (null, false);
                 }
                 return (user, true);
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.ToString());
                 return (null, false);
             }
         }

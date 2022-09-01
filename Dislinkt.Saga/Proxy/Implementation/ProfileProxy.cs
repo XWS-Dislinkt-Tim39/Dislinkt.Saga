@@ -1,5 +1,7 @@
 ﻿using Dislinkt.Saga.Data;
 using Newtonsoft.Json;
+using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,8 +32,9 @@ namespace Dislinkt.Saga.Proxy.Implementation
                 createdUserJson = JsonConvert.DeserializeObject<User>(createdUser);
                 return (createdUserJson, true);
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.ToString());
                 return (null, false);
             }
 
